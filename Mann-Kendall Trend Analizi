@@ -1,0 +1,34 @@
+# ==============================================================================
+# MADDE 2: MANN-KENDALL TREND ANALİZ MOTORU
+# ==============================================================================
+
+# Sonuçları saklamak için yeni bir özet tablo açıyoruz
+trend_tablo <- data.frame(Sure=character(), MK_Tau=numeric(), MK_p=numeric(), 
+                          Trend_Yonu=character(), stringsAsFactors=FALSE)
+
+for (sure in sureler) {
+  ts_veri <- na.omit(veri_temiz[[sure]])
+  
+  if(length(ts_veri) > 5) {
+    # Mann-Kendall Testini Çalıştırıyoruz
+    mk_res <- trend::mk.test(ts_veri)
+    
+    tau_val <- round(mk_res$estimates[[1]], 4)
+    p_val <- round(mk_res$p.value, 4)
+    
+    # Trend yönünü ve anlamlılığını belirleme
+    if(p_val < 0.05) {
+      yon <- ifelse(tau_val > 0, "Anlamlı Artış (+)", "Anlamlı Azalış (-)")
+    } else {
+      yon <- ifelse(tau_val > 0, "Anlamlı Değil (Eğilim Artış)", "Anlamlı Değil (Eğilim Azalış)")
+    }
+    
+    # Tabloya satır ekleme
+    trend_tablo[nrow(trend_tablo) + 1, ] <- c(sure, tau_val, p_val, yon)
+  }
+}
+
+cat("\n\n==================================================================\n")
+cat("          BÜTÜN VERİ SETLERİ İÇİN MANN-KENDALL TREND TABLOSU\n")
+cat("==================================================================\n")
+print(trend_tablo)
