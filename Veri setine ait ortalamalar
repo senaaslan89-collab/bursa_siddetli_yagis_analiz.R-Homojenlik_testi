@@ -1,0 +1,53 @@
+# ==============================================================================
+# MADDE 3: Veri setinin gözlem süresi ortalamaları
+# ==============================================================================
+
+# 1. ADIM: VERiyi OKUMA ve temizleme
+veri_ham <- read.csv(file.choose(), header = FALSE, sep = ";", check.names = FALSE)
+colnames(veri_ham) <- veri_ham[2, ]
+veri_temiz <- veri_ham[-c(1, 2), ]
+veri_temiz[] <- lapply(veri_temiz, function(x) as.numeric(gsub(",", ".", x)))
+
+colnames(veri_temiz)[1] <- "Yil"
+sureler <- colnames(veri_temiz)[-1]
+
+# Sonu??lar?? saklamak i??in yeni bir ??zet tablo a????yoruz
+donem_hocanin_tablo <- data.frame(Sure=character(), 
+                                  Ort_1970_1990=numeric(), 
+                                  Ort_1991_2020=numeric(), 
+                                  t_Test_p=numeric(), 
+                                  Yorum=character(), stringsAsFactors=FALSE)
+
+for (sure in sureler) {
+  ts_veri <- as.numeric(veri_temiz[[sure]])
+  yillar <- as.numeric(veri_temiz$Yil)
+  
+  # HOCANIN ??STED?????? G??B?? GRUPLARI AYIRIYORUZ:
+  grup_eski <- ts_veri[yillar >= 1970 & yillar <= 1990 & !is.na(ts_veri)]
+  grup_yeni <- ts_veri[yillar >= 1991 & yillar <= 2020 & !is.na(ts_veri)]
+  
+  if(length(grup_eski) > 2 && length(grup_yeni) > 2) {
+    # D??nem ortalamalar??
+    ort_eski <- round(mean(grup_eski), 2)
+    ort_yeni <- round(mean(grup_yeni), 2)
+    
+    # ??ki d??nemin ortalamalar??n?? t-testi ile kar????la??t??r??yoruz
+    t_res <- t.test(grup_eski, grup_yeni)
+    p_val <- round(t_res$p.value, 4)
+    
+    # 0.05 s??n??r??na g??re fark??n anlaml??l??????n?? yorumlama
+    if(p_val < 0.05) {
+      yorum_metni <- "D??nemsel De??i??im Belirgin (Anlaml??)"
+    } else {
+      yorum_metni <- "Fark Rastlant??sal (Anlaml?? De??il)"
+    }
+    
+    # Sonu??lar?? tabloya ekleme
+    donem_hocanin_tablo[nrow(donem_hocanin_tablo) + 1, ] <- c(sure, ort_eski, ort_yeni, p_val, yorum_metni)
+  }
+}
+
+cat("\n\n==================================================================\n")
+cat("       1970-1990 vs 1991-2020 D??NEMSEL ORTALAMA KAR??ILA??TIRMA TABLOSU\n")
+cat("==================================================================\n")
+print(donem_hocanin_tablo)
